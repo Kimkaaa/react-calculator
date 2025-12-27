@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Decimal from "decimal.js";
 
 interface CalculatorState {
   currentNumber: string;     // 현재 입력 중인 숫자
@@ -41,6 +42,7 @@ export default function App() {
   const handleOperatorClick = (
     event: React.MouseEvent<HTMLInputElement, MouseEvent>
   ) => {
+    if (state.currentNumber === '0') return;
     // 현재 클릭한 연산 기호 가져오기
     const operator = event.currentTarget.value;
     // 현재 출력칸에 표시된 숫자를 숫자형으로 변환
@@ -52,16 +54,16 @@ export default function App() {
       // 연산 기호에 따라 연산 수행
       switch (state.operation) {
         case '+':
-          result = prev + current;
+          result = new Decimal(prev).plus(current).toNumber();
           break;
         case '-':
-          result = prev - current;
+          result = new Decimal(prev).minus(current).toNumber();
           break;
         case '*':
-          result = prev * current;
+          result = new Decimal(prev).times(current).toNumber();
           break;
         case '/':
-          result = prev / current;
+          result = new Decimal(prev).dividedBy(current).toNumber();
           break;
       }
       if (operator === '=') {
@@ -81,6 +83,11 @@ export default function App() {
           isNewNumber: true,
         });
       }
+    } else if (state.currentNumber !== '' && operator === '=') {
+      setState({
+        ...state,
+        isNewNumber: true,
+      });
     } else {
       // 첫 번째 숫자 입력 후 연산 기호 버튼 클릭 시
       setState({
@@ -112,7 +119,7 @@ export default function App() {
       });
     }
   };
-  
+
   return (
     <article className="calculator">
       <form name="forms">
