@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Decimal from "decimal.js";
 
 interface CalculatorState {
@@ -9,6 +9,14 @@ interface CalculatorState {
 }
 
 export default function App() {
+  // 다크 모드 상태
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // body 다크 모드 클래스 제어
+  useEffect(() => {
+    document.body.classList.toggle("dark", isDarkMode);
+  }, [isDarkMode]);
+
   // 계산기 상태 관리
   const [state, setState] = useState<CalculatorState>({
     currentNumber: '0',   // 화면에 표시되는 값
@@ -121,27 +129,37 @@ export default function App() {
   };
 
   return (
-    <article className="calculator">
-      <form name="forms">
-        <input type="text" name="output" value={state.currentNumber} readOnly />
-        <input type="button" className="clear" value="C" onClick={handleClear} />
-        <input type="button" className="operator" value="/" onClick={handleOperatorClick} />
-        <input type="button" value="1" onClick={handleNumberClick} />
-        <input type="button" value="2" onClick={handleNumberClick} />
-        <input type="button" value="3" onClick={handleNumberClick} />
-        <input type="button" className="operator" value="*" onClick={handleOperatorClick} />
-        <input type="button" value="4" onClick={handleNumberClick} />
-        <input type="button" value="5" onClick={handleNumberClick} />
-        <input type="button" value="6" onClick={handleNumberClick} />
-        <input type="button" className="operator" value="+" onClick={handleOperatorClick} />
-        <input type="button" value="7" onClick={handleNumberClick} />
-        <input type="button" value="8" onClick={handleNumberClick} />
-        <input type="button" value="9" onClick={handleNumberClick} />
-        <input type="button" className="operator" value="-" onClick={handleOperatorClick} />
-        <input type="button" className="dot" value="." onClick={handleDot} />
-        <input type="button" value="0" onClick={handleNumberClick} />
-        <input type="button" className="operator result" value="=" onClick={handleOperatorClick} />
-      </form>
-    </article>
+    <>
+      <button
+        type="button"
+        className="theme-toggle"
+        onClick={() => setIsDarkMode((prev) => !prev)}
+      >
+        {isDarkMode ? "☀️" : "🌙"}
+      </button>
+
+      <article className={`calculator ${isDarkMode ? "dark" : ""}`}>
+        <form name="forms">
+          <input type="text" name="output" value={state.currentNumber} readOnly />
+          <input type="button" className="clear" value="C" onClick={handleClear} />
+          <input type="button" className="operator" value="/" onClick={handleOperatorClick} />
+          <input type="button" value="1" onClick={handleNumberClick} />
+          <input type="button" value="2" onClick={handleNumberClick} />
+          <input type="button" value="3" onClick={handleNumberClick} />
+          <input type="button" className="operator" value="*" onClick={handleOperatorClick} />
+          <input type="button" value="4" onClick={handleNumberClick} />
+          <input type="button" value="5" onClick={handleNumberClick} />
+          <input type="button" value="6" onClick={handleNumberClick} />
+          <input type="button" className="operator" value="+" onClick={handleOperatorClick} />
+          <input type="button" value="7" onClick={handleNumberClick} />
+          <input type="button" value="8" onClick={handleNumberClick} />
+          <input type="button" value="9" onClick={handleNumberClick} />
+          <input type="button" className="operator" value="-" onClick={handleOperatorClick} />
+          <input type="button" className="dot" value="." onClick={handleDot} />
+          <input type="button" value="0" onClick={handleNumberClick} />
+          <input type="button" className="operator result" value="=" onClick={handleOperatorClick} />
+        </form>
+      </article>
+    </>
   );
 }

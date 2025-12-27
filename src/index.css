@@ -5,11 +5,36 @@
 }
 
 body {
-  /* background-color: #1f1f1f; */
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
+  transition: background-color 0.3s ease;
+}
+
+body.dark {
+  background-color: #1f1f1f;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+
+  width: 40px;
+  height: 40px;
+
+  background: none;
+  border: none;
+
+  cursor: pointer;
+  font-size: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;
 }
 
 .calculator {
@@ -36,6 +61,12 @@ body {
   box-shadow: 1px 1px 2px #333;
 }
 
+.calculator form input[type='text'] {
+  grid-column: span 4;
+  text-align: right;
+  padding: 0 10px;
+}
+
 .calculator form .clear {
   background-color: #ed4848;
 }
@@ -48,16 +79,37 @@ body {
   background-color: green;
 }
 
-.calculator form input[type='text'] {
-  grid-column: span 4;
-  text-align: right;
-  padding: 0 10px;
-}
-
 .calculator form .clear {
   grid-column: span 3;
 }
 
 .calculator form .result {
   grid-column: span 2;
+}
+
+.calculator.dark {
+  background-color: #1f1f1f;
+  border-color: #666;
+}
+
+.calculator.dark form input {
+  background-color: #2a2a2a;
+  color: #f2f2f2;
+  border-color: #666;
+}
+
+.calculator.dark form input[type="text"] {
+  background-color: #111;
+}
+
+.calculator.dark form .operator {
+  background-color: #c98a00;
+}
+
+.calculator.dark form .dot {
+  background-color: #0f7a0f;
+}
+
+.calculator.dark form .clear {
+  background-color: #c13b3b;
 }
