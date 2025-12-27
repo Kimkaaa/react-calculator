@@ -94,7 +94,12 @@ export default function App() {
 
   // C 버튼 클릭 처리 함수: 모든 상태 초기화
   const handleClear = () => {
-    console.log('clear');
+    setState({
+      currentNumber: '0',
+      previousNumber: '',
+      operation: null,
+      isNewNumber: true,
+    });
   };
 
   // 소수점 버튼 클릭 처리 함수: 현재 숫자에 소수점이 없을 경우에만 추가
