@@ -1,14 +1,21 @@
 import { useState } from "react";
 
+interface CalculatorState {
+  currentNumber: string;     // 현재 입력 중인 숫자
+  previousNumber: string;    // 이전에 입력한 숫자
+  operation: string | null;  // 연산 기호 또는 null
+  isNewNumber: boolean;      // 새로운 숫자 입력 여부
+}
+
 export default function App() {
   // 계산기 상태 관리
-  const [state, setState] = useState({
+  const [state, setState] = useState<CalculatorState>({
     currentNumber: '0',   // 화면에 표시되는 값
     previousNumber: '',   // 연산자 선택 전 값
     operation: null,      // 선택된 연산자
     isNewNumber: true,    // 새 숫자 입력 여부
   });
-  
+
   // 숫자 버튼 클릭 처리 함수
   const handleNumberClick = (
     event: React.MouseEvent<HTMLInputElement, MouseEvent>
@@ -34,7 +41,55 @@ export default function App() {
   const handleOperatorClick = (
     event: React.MouseEvent<HTMLInputElement, MouseEvent>
   ) => {
-    console.log(event.currentTarget.value);
+    // 현재 클릭한 연산 기호 가져오기
+    const operator = event.currentTarget.value;
+    // 현재 출력칸에 표시된 숫자를 숫자형으로 변환
+    const current = parseFloat(state.currentNumber || '0');
+    // 이전 숫자와 연산 기호가 모두 있는 경우(연속 연산)
+    if (state.previousNumber !== '' && state.operation) {
+      const prev = parseFloat(state.previousNumber);
+      let result = 0;
+      // 연산 기호에 따라 연산 수행
+      switch (state.operation) {
+        case '+':
+          result = prev + current;
+          break;
+        case '-':
+          result = prev - current;
+          break;
+        case '*':
+          result = prev * current;
+          break;
+        case '/':
+          result = prev / current;
+          break;
+      }
+      if (operator === '=') {
+        // = 버튼 클릭 시 연산 종료
+        setState({
+          currentNumber: result.toString(),
+          previousNumber: '',
+          operation: null,
+          isNewNumber: true,
+        });
+      } else {
+        // 다른 연산 기호 버튼 클릭 시 연산 유지
+        setState({
+          currentNumber: '',
+          previousNumber: result.toString(),
+          operation: operator,
+          isNewNumber: true,
+        });
+      }
+    } else {
+      // 첫 번째 숫자 입력 후 연산 기호 버튼 클릭 시
+      setState({
+        currentNumber: '',
+        previousNumber: current.toString(),
+        operation: operator,
+        isNewNumber: true,
+      });
+    }
   };
 
   // C 버튼 클릭 처리 함수: 모든 상태 초기화
