@@ -104,8 +104,15 @@ export default function App() {
 
   // 소수점 버튼 클릭 처리 함수: 현재 숫자에 소수점이 없을 경우에만 추가
   const handleDot = () => {
-    console.log('dot');
+    if (!state.currentNumber.includes('.')) {
+      setState({
+        ...state,
+        currentNumber: state.currentNumber + '.',
+        isNewNumber: false,
+      });
+    }
   };
+  
   return (
     <article className="calculator">
       <form name="forms">
