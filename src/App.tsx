@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import Decimal from "decimal.js";
 
+const OPERATORS = ["+", "-", "*", "/"];
+
 interface CalculatorState {
   currentNumber: string;     // 현재 입력 중인 숫자
   previousNumber: string;    // 이전에 입력한 숫자
@@ -31,8 +33,10 @@ export default function App() {
       if (prev.isNewNumber) {
         return { ...prev, currentNumber: value, isNewNumber: false };
       }
+
       // 0에서 시작할 때 "0" -> "5" 치환
       if (prev.currentNumber === "0") return { ...prev, currentNumber: value, isNewNumber: false };
+      
       return { ...prev, currentNumber: prev.currentNumber + value };
     });
   };
@@ -40,15 +44,32 @@ export default function App() {
   // 연산 처리 (클릭/키보드 공용)
   const handleOperator = (operator: string) => {
     setState((prev) => {
+      // 연산자 연속 입력: 연산자 교체(사칙연산만)
       if (prev.currentNumber === "") {
-        // 이미 previousNumber가 있고 operation이 있으면, 연산자만 교체 허용
-        if (prev.previousNumber !== "" && prev.operation) {
+        if (OPERATORS.includes(operator) && prev.previousNumber !== "" && prev.operation) {
           return { ...prev, operation: operator };
         }
         return prev;
       }
 
       const current = parseFloat(prev.currentNumber || "0");
+
+    // 화면 값이 숫자가 아니면(에러 메시지 상태) 계산기 상태를 초기화
+    if (Number.isNaN(current)) {
+      return {
+        currentNumber: "0",
+        previousNumber: "",
+        operation: null,
+        isNewNumber: true,
+      };
+    }
+
+    const divisionByZeroState = {
+      currentNumber: "0으로 나눌 수 없습니다",
+      previousNumber: "",
+      operation: null,
+      isNewNumber: true,
+    };
 
       // 연속 연산
       if (prev.previousNumber !== "" && prev.operation) {
@@ -66,6 +87,7 @@ export default function App() {
             result = new Decimal(prevNum).times(current).toNumber();
             break;
           case "/":
+            if (current === 0) return divisionByZeroState;
             result = new Decimal(prevNum).dividedBy(current).toNumber();
             break;
         }
@@ -102,7 +124,7 @@ export default function App() {
     });
   };
 
-  // C 버튼 클릭 처리 함수: 모든 상태 초기화
+  // 초기화
   const handleClear = () => {
     setState({
       currentNumber: '0',
@@ -112,7 +134,7 @@ export default function App() {
     });
   };
 
-  // 소수점 버튼 클릭 처리 함수: 현재 숫자에 소수점이 없을 경우에만 추가
+  // 소수점 입력
   const handleDot = () => {
     setState((prev) => {
       // 새 숫자 시작이면 "0."부터
@@ -120,6 +142,7 @@ export default function App() {
         return { ...prev, currentNumber: "0.", isNewNumber: false };
       }
       if (prev.currentNumber.includes(".")) return prev;
+
       return { ...prev, currentNumber: prev.currentNumber + ".", isNewNumber: false };
     });
   };
@@ -128,9 +151,11 @@ export default function App() {
   const handleBackspace = () => {
     setState((prev) => {
       if (prev.isNewNumber) return prev;
+
       if (prev.currentNumber.length <= 1) {
         return { ...prev, currentNumber: "0", isNewNumber: true };
       }
+
       return { ...prev, currentNumber: prev.currentNumber.slice(0, -1) };
     });
   };
@@ -164,7 +189,7 @@ export default function App() {
       }
 
       // 연산자
-      if (key === "+" || key === "-" || key === "*" || key === "/") {
+      if (OPERATORS.includes(key)) {
         e.preventDefault();
         handleOperator(key);
         return;
