@@ -4,12 +4,25 @@ import Decimal from "decimal.js";
 const OPERATORS = ["+", "-", "*", "/"];
 
 interface CalculatorState {
-  currentNumber: string;     // 현재 입력 중인 숫자
-  previousNumber: string;    // 이전에 입력한 숫자
-  operation: string | null;  // 연산 기호 또는 null
-  lastOperand: string;       // '=' 반복 계산을 위한 마지막 피연산자
-  isNewNumber: boolean;      // 새로운 숫자 입력 여부
+  currentNumber: string;     // 화면에 표시되는 현재 입력값
+  previousNumber: string;    // 이전 연산 결과 또는 첫 번째 피연산자
+  operation: string | null;  // 선택된 연산자(+, -, *, /) 또는 null
+  lastOperand: string;       // '=' 반복 입력 시 사용할 마지막 피연산자
+  isNewNumber: boolean;      // 다음 숫자 입력 시 새로 시작할지 여부
 }
+
+const RESET_STATE: CalculatorState = {
+  currentNumber: "0",
+  previousNumber: "",
+  operation: null,
+  lastOperand: "",
+  isNewNumber: true,
+};
+
+const DIVISION_BY_ZERO_STATE: CalculatorState = {
+  ...RESET_STATE,
+  currentNumber: "0으로 나눌 수 없습니다",
+};
 
 export default function App() {
   // 다크 모드 상태
@@ -21,23 +34,11 @@ export default function App() {
   }, [isDarkMode]);
 
   // 계산기 상태 관리
-  const [state, setState] = useState<CalculatorState>({
-    currentNumber: '0',   // 화면에 표시되는 값
-    previousNumber: '',   // 연산자 선택 전 값
-    operation: null,      // 선택된 연산자
-    lastOperand: "",      // 마지막 피연산자
-    isNewNumber: true,    // 새 숫자 입력 여부
-  });
+  const [state, setState] = useState<CalculatorState>(RESET_STATE);
 
   // 초기화
   const handleClear = () => {
-    setState({
-      currentNumber: "0",
-      previousNumber: "",
-      operation: null,
-      lastOperand: "",
-      isNewNumber: true,
-    });
+    setState(RESET_STATE);
   };
 
   // 숫자 입력 (클릭/키보드 공용)
@@ -85,29 +86,14 @@ export default function App() {
   // 연산 처리 (클릭/키보드 공용)
   const handleOperator = (operator: string) => {
     setState((prev) => {
-      const divisionByZeroState = {
-        currentNumber: "0으로 나눌 수 없습니다",
-        previousNumber: "",
-        operation: null,
-        lastOperand: "",
-        isNewNumber: true,
-      };
-
-      const resetState = {
-        currentNumber: "0",
-        previousNumber: "",
-        operation: null,
-        lastOperand: "",
-        isNewNumber: true,
-      };
+      const current = parseFloat(prev.currentNumber || "0");
 
       // 숫자가 아닌 화면(에러 메시지 등)인 상태에서 연산이 들어오면 초기화
-      const parsedCurrent = parseFloat(prev.currentNumber || "0");
-      if (prev.currentNumber !== "" && Number.isNaN(parsedCurrent)) {
-        return resetState;
+      if (prev.currentNumber !== "" && Number.isNaN(current)) {
+        return RESET_STATE;
       }
 
-      // 실제 계산 수행(Decimal + /0 처리까지 한 곳에서)
+      // 계산 함수(사칙연산)
       const compute = (a: number, op: string, b: number) => {
         switch (op) {
           case "+":
@@ -117,10 +103,10 @@ export default function App() {
           case "*":
             return new Decimal(a).times(b).toNumber();
           case "/":
-            if (b === 0) return null; // /0 신호
+            if (b === 0) return null; // 0으로 나누기 예외 신호
             return new Decimal(a).dividedBy(b).toNumber();
           default:
-            return undefined; // 잘못된 op
+            return undefined; // 지원하지 않는 연산자 방어 처리
         }
       };
 
@@ -137,7 +123,7 @@ export default function App() {
         const b = parseFloat(prev.lastOperand);
 
         const result = compute(a, prev.operation, b);
-        if (result === null) return divisionByZeroState;
+        if (result === null) return DIVISION_BY_ZERO_STATE;
         if (result === undefined) return prev;
 
         return {
@@ -149,8 +135,7 @@ export default function App() {
         };
       }
 
-      // --- 2) currentNumber가 비어있는 상태 ---
-      // (연산자를 눌러서 currentNumber를 ""로 비워둔 상태)
+      // --- 2) currentNumber가 비어있는 상태(연산자 입력 직후) ---
       if (prev.currentNumber === "") {
         // 2-1) 연산자 연속 입력: 사칙연산이면 연산자만 교체
         if (OPERATORS.includes(operator) && prev.previousNumber !== "" && prev.operation) {
@@ -165,7 +150,7 @@ export default function App() {
           const b = parseFloat(operandStr);
 
           const result = compute(a, prev.operation, b);
-          if (result === null) return divisionByZeroState;
+          if (result === null) return DIVISION_BY_ZERO_STATE;
           if (result === undefined) return prev;
 
           return {
@@ -182,16 +167,33 @@ export default function App() {
       }
 
       // --- 3) currentNumber가 있는 상태(숫자 입력 후) ---
-      const current = parseFloat(prev.currentNumber || "0");
-      if (Number.isNaN(current)) return resetState;
 
-      // 3-1) 연속 연산(이미 previousNumber와 operation이 있는 상태)
+      // 3-0) 결과(=) 직후에 새 연산자 입력: 기존 operation으로 연속 계산하지 말고 새 연산 시작
+      // 예: 9 - 4 = (5) → + 3 = → 8
+      if (
+        prev.isNewNumber &&
+        OPERATORS.includes(operator) &&
+        prev.currentNumber !== "" &&
+        prev.previousNumber !== "" &&
+        prev.operation
+      ) {
+        // 결과값을 새 연산의 시작점으로
+        return {
+          currentNumber: "",
+          previousNumber: prev.currentNumber, // 결과값을 새 연산의 첫 피연산자로 사용
+          operation: operator,                // 새 연산자
+          lastOperand: "",                    // 새 연산 시작 → 반복 피연산자 초기화
+          isNewNumber: true,
+        };
+      }
+
+      // 3-1) 연속 연산(previousNumber와 operation이 있는 상태)
       if (prev.previousNumber !== "" && prev.operation) {
         const a = parseFloat(prev.previousNumber);
         const b = current;
 
         const result = compute(a, prev.operation, b);
-        if (result === null) return divisionByZeroState;
+        if (result === null) return DIVISION_BY_ZERO_STATE;
         if (result === undefined) return prev;
 
         // '='이면 결과 표시 + 반복용 상태 저장
@@ -219,19 +221,20 @@ export default function App() {
         return prev;
       }
 
-      // 3-2) 첫 연산자 선택(previousNumber가 아직 없음)
+      // 3-2) 첫 연산자 선택(previousNumber 없음)
       if (operator === "=") {
-        // 그냥 유지(일반 계산기들도 보통 변화 없음)
+        // 첫 연산이 없는 상태에서 '=' 입력은 변화 없음
         return { ...prev, isNewNumber: true };
       }
 
+      // 첫 연산자 입력: 현재 숫자를 첫 피연산자로 저장하고 연산 대기 상태로 전환
       if (!OPERATORS.includes(operator)) return prev;
 
       return {
         currentNumber: "",
         previousNumber: current.toString(),
         operation: operator,
-        lastOperand: "", // 새 연산 시작 → 반복 피연산자 초기화
+        lastOperand: current.toString(), // 결과 이후 연산 시작 시, 반복 '=' 기준 피연산자로 사용
         isNewNumber: true,
       };
     });
