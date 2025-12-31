@@ -315,30 +315,38 @@ export default function App() {
         type="button"
         className="theme-toggle"
         onClick={() => setIsDarkMode((prev) => !prev)}
+        aria-pressed={isDarkMode}
+        aria-label={isDarkMode ? "라이트 모드로 전환" : "다크 모드로 전환"}
       >
         {isDarkMode ? "☀️" : "🌙"}
       </button>
 
-      <article className={`calculator ${isDarkMode ? "dark" : ""}`}>
+      <article className={`calculator ${isDarkMode ? "dark" : ""}`} aria-label="계산기">
+
+        {/* 값 변경 시 스크린리더가 읽도록 라이브 영역 추가 */}
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          현재 값 {state.currentNumber}
+        </div>
+
         <form name="forms">
-          <input type="text" name="output" value={state.currentNumber} readOnly />
-          <input type="button" className="clear" value="C" onClick={handleClear} />
-          <input type="button" className="operator" value="/" onClick={onOperatorClick} />
+          <input type="text" name="output" value={state.currentNumber} readOnly aria-label="현재 값" />
+          <input type="button" className="clear" value="C" onClick={handleClear} aria-label="초기화" />
+          <input type="button" className="operator" value="/" onClick={onOperatorClick} aria-label="나누기" />
           <input type="button" value="1" onClick={onNumberClick} />
           <input type="button" value="2" onClick={onNumberClick} />
           <input type="button" value="3" onClick={onNumberClick} />
-          <input type="button" className="operator" value="*" onClick={onOperatorClick} />
+          <input type="button" className="operator" value="*" onClick={onOperatorClick} aria-label="곱하기" />
           <input type="button" value="4" onClick={onNumberClick} />
           <input type="button" value="5" onClick={onNumberClick} />
           <input type="button" value="6" onClick={onNumberClick} />
-          <input type="button" className="operator" value="+" onClick={onOperatorClick} />
+          <input type="button" className="operator" value="+" onClick={onOperatorClick} aria-label="더하기" />
           <input type="button" value="7" onClick={onNumberClick} />
           <input type="button" value="8" onClick={onNumberClick} />
           <input type="button" value="9" onClick={onNumberClick} />
-          <input type="button" className="operator" value="-" onClick={onOperatorClick} />
-          <input type="button" className="dot" value="." onClick={handleDot} />
+          <input type="button" className="operator" value="-" onClick={onOperatorClick} aria-label="빼기" />
+          <input type="button" className="dot" value="." onClick={handleDot} aria-label="소수점" />
           <input type="button" value="0" onClick={onNumberClick} />
-          <input type="button" className="operator result" value="=" onClick={onOperatorClick} />
+          <input type="button" className="operator result" value="=" onClick={onOperatorClick} aria-label="계산 결과"/>
         </form>
       </article>
     </>
