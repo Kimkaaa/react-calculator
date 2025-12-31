@@ -1,73 +1,71 @@
-# React + TypeScript + Vite
+# Calculator (React + TypeScript)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React와 TypeScript를 사용해 구현한 계산기 프로젝트입니다.  
+사칙연산과 소수점 계산을 지원하며, 키보드 입력과 다크 모드, 스크린리더 접근성을 함께 고려하여 구현했습니다.
 
-Currently, two official plugins are available:
+이 프로젝트는 상태 설계, 입력 처리 로직, 접근성 개선을 학습하고 정리하기 위한 개인 학습용 프로젝트입니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+<br>
 
-## React Compiler
+<img src="./screenshot/calculator-preview.png" />
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+<br>
 
-## Expanding the ESLint configuration
+## 주요 기능
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- 사칙연산(+ / − / × / ÷) 및 소수점 계산
+- `=` 반복 입력 시 마지막 피연산자를 기준으로 재계산
+- 마우스 및 키보드 입력 지원
+- 다크 모드 전환
+- 스크린리더 접근성 고려
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+<br>
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 기술 스택
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- React
+- TypeScript
+- Decimal.js
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+<br>
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 동작 예시
+
+- `8 ÷ 0 =` → `0으로 나눌 수 없습니다`
+- `0 → 5` 입력 시 `05`가 아닌 `5`로 치환
+- `=` 반복 입력 시 마지막 연산 기준으로 결과 재계산
+- `Backspace` 입력 시 마지막 자리 삭제
+- `Escape` 입력 시 전체 초기화
+
+<br>
+
+## 구현 포인트
+
+### 상태 설계
+
+계산기 입력 흐름을 하나의 상태 객체로 관리합니다.
+
+- `currentNumber`: 현재 화면에 표시되는 값
+- `previousNumber`: 이전 피연산자
+- `operation`: 선택된 연산자
+- `lastOperand`: `=` 반복 입력을 위한 마지막 피연산자
+- `isNewNumber`: 새 숫자 입력 여부 판단
+
+입력 방식(마우스/키보드)에 관계없이 동일한 상태 전이 로직을 사용하도록 구성했습니다.
+
+<br>
+
+### 입력 처리
+
+- 숫자 입력, 연산자 입력, 특수 입력(초기화·삭제)을 분리해 처리
+- 중복되는 조건 로직은 하나의 분기로 정리해 가독성을 유지
+- 화면 값은 문자열로 관리하고, 계산 시에만 수치 연산을 수행
+
+<br>
+
+### 접근성 고려
+
+- 화면 값이 변경될 때 스크린리더가 자연스럽게 읽을 수 있도록 라이브 영역을 사용
+- `*`, `/` 같은 기호 버튼은 의미가 명확히 전달되도록 `aria-label`을 명시
+- 계산기 특성에 맞게 버튼 타입을 명확히 지정해 불필요한 제출 동작을 방지
