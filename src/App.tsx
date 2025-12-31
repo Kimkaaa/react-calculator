@@ -57,7 +57,7 @@ function compute(a: number, op: string, b: number): number | null {
  * 연산자 입력에 대한 상태 전이
  */
 function reduceOperator(prev: CalculatorState, operator: string): CalculatorState {
-  // 숫자가 아닌 화면(에러 메시지 등)에서 연산이 들어오면 초기화
+  // 에러 상태에서 연산 입력 시 초기화
   const currentParsed = toNumberSafe(prev.currentNumber);
   if (prev.currentNumber !== "" && currentParsed === null) {
     return RESET_STATE;
@@ -123,7 +123,6 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
   if (
     prev.isNewNumber &&
     isOperator(operator) &&
-    prev.currentNumber !== "" &&
     prev.previousNumber !== "" &&
     prev.operation
   ) {
@@ -186,10 +185,10 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
 }
 
 export default function App() {
-  // 다크 모드 상태
+  // 다크 모드 상태 관리
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // body 다크 모드 클래스 제어
+  // body에 다크 모드 클래스 적용
   useEffect(() => {
     document.body.classList.toggle("dark", isDarkMode);
   }, [isDarkMode]);
@@ -205,12 +204,8 @@ export default function App() {
   // 숫자 입력 (클릭/키보드 공용)
   const handleNumber = (value: string) => {
     setState((prev) => {
-      if (prev.isNewNumber) {
-        return { ...prev, currentNumber: value, isNewNumber: false };
-      }
-
-      // 0에서 시작할 때 "0" -> "5" 치환
-      if (prev.currentNumber === "0") {
+      // 새 숫자 시작이거나 0에서 시작하면 치환
+      if (prev.isNewNumber || prev.currentNumber === "0") {
         return { ...prev, currentNumber: value, isNewNumber: false };
       }
 
@@ -231,7 +226,7 @@ export default function App() {
     });
   };
 
-  // Backspace 지원
+  // Backspace 처리
   const handleBackspace = () => {
     setState((prev) => {
       if (prev.isNewNumber) return prev;
@@ -323,12 +318,12 @@ export default function App() {
 
       <article className={`calculator ${isDarkMode ? "dark" : ""}`} aria-label="계산기">
 
-        {/* 값 변경 시 스크린리더가 읽도록 라이브 영역 추가 */}
+        {/* 값 변경 시 스크린리더가 읽도록 하는 라이브 영역 */}
         <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
           현재 값 {state.currentNumber}
         </div>
 
-        <form name="forms">
+        <form>
           <input type="text" name="output" value={state.currentNumber} readOnly aria-label="현재 값" />
           <input type="button" className="clear" value="C" onClick={handleClear} aria-label="초기화" />
           <input type="button" className="operator" value="/" onClick={onOperatorClick} aria-label="나누기" />
