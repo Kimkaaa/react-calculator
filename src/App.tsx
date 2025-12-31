@@ -3,39 +3,56 @@ import Decimal from "decimal.js";
 
 const OPERATORS = ["+", "-", "*", "/"];
 
+/**
+ * 계산기 상태
+ */
 interface CalculatorState {
-  currentNumber: string;     // 화면 표시(숫자 문자열 or 에러 메시지)
-  previousNumber: string;    // 이전 연산 결과 또는 첫 번째 피연산자
-  operation: string | null;  // 선택된 연산자(+, -, *, /) 또는 null
-  lastOperand: string;       // '=' 반복 입력 시 사용할 마지막 피연산자
-  isNewNumber: boolean;      // 다음 숫자 입력 시 새로 시작할지 여부
+  currentNumber: string;      // 화면 표시 값 (숫자 문자열 또는 에러 메시지)
+  previousNumber: string;     // 이전 피연산자 또는 이전 결과
+  operation: string | null;   // 선택된 연산자
+  lastOperand: string;        // '=' 반복 입력 시 사용할 마지막 피연산자
+  isNewNumber: boolean;       // 새 숫자 입력 여부
+  historyExpression: string;  // 상단 연산식 표시
 }
 
+/**
+ * 초기 상태
+ */
 const RESET_STATE: CalculatorState = {
   currentNumber: "0",
   previousNumber: "",
   operation: null,
   lastOperand: "",
   isNewNumber: true,
+  historyExpression: "",
 };
 
+/**
+ * 0으로 나누기 에러 상태
+ */
 const DIVISION_BY_ZERO_STATE: CalculatorState = {
   ...RESET_STATE,
   currentNumber: "0으로 나눌 수 없습니다",
 };
 
+/**
+ * 연산자 여부 확인
+ */
 function isOperator(value: string): boolean {
   return OPERATORS.includes(value);
 }
 
+/**
+ * 문자열 숫자를 안전하게 number로 변환
+ */
 function toNumberSafe(value: string): number | null {
-  const n = parseFloat(value || "0");
+  const n = parseFloat(value);
   return Number.isNaN(n) ? null : n;
 }
 
 /**
  * 사칙연산 수행
- * - 0으로 나누면 null 반환(에러 신호)
+ * - 0으로 나누면 null 반환
  */
 function compute(a: number, op: string, b: number): number | null {
   switch (op) {
@@ -54,7 +71,7 @@ function compute(a: number, op: string, b: number): number | null {
 }
 
 /**
- * 연산자 입력에 대한 상태 전이
+ * 연산자 입력에 따른 상태 전이
  */
 function reduceOperator(prev: CalculatorState, operator: string): CalculatorState {
   // 에러 상태에서 연산 입력 시 초기화
@@ -63,13 +80,13 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
     return RESET_STATE;
   }
 
-  // 1) '=' 반복 입력: 결과 상태에서 '=' 다시 누름
+  // 1) '=' 반복 입력
   if (
     operator === "=" &&
     prev.isNewNumber &&
-    prev.previousNumber !== "" &&
+    prev.previousNumber &&
     prev.operation &&
-    prev.lastOperand !== ""
+    prev.lastOperand
   ) {
     const a = toNumberSafe(prev.previousNumber);
     const b = toNumberSafe(prev.lastOperand);
@@ -82,23 +99,27 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
       ...prev,
       currentNumber: result.toString(),
       previousNumber: result.toString(),
-      // operation, lastOperand 유지
       isNewNumber: true,
+      historyExpression: `${prev.previousNumber} ${prev.operation} ${prev.lastOperand} =`,
     };
   }
 
-  // 2) 입력 대기 상태(currentNumber === "")
+  // 2) 입력 대기 상태 (currentNumber === "")
   if (prev.currentNumber === "") {
-    // 2-1) 연산자 연속 입력: 연산자만 교체
-    if (isOperator(operator) && prev.previousNumber !== "" && prev.operation) {
-      return { ...prev, operation: operator };
+    // 연산자 교체
+    if (isOperator(operator) && prev.previousNumber && prev.operation) {
+      return {
+        ...prev,
+        operation: operator,
+        historyExpression: `${prev.previousNumber} ${operator}`,
+      };
     }
 
-    // 2-2) 예: 7 + = → 7 + 7 = 14 (lastOperand 없으면 previousNumber 재사용)
-    if (operator === "=" && prev.previousNumber !== "" && prev.operation) {
+    // 7 + = → 7 + 7 =
+    if (operator === "=" && prev.previousNumber && prev.operation) {
+      const operand = prev.lastOperand || prev.previousNumber;
       const a = toNumberSafe(prev.previousNumber);
-      const operandStr = prev.lastOperand !== "" ? prev.lastOperand : prev.previousNumber;
-      const b = toNumberSafe(operandStr);
+      const b = toNumberSafe(operand);
       if (a === null || b === null) return RESET_STATE;
 
       const result = compute(a, prev.operation, b);
@@ -107,50 +128,48 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
       return {
         currentNumber: result.toString(),
         previousNumber: result.toString(),
-        operation: prev.operation, // 유지 → '=' 반복 가능
-        lastOperand: operandStr,   // 반복 피연산자 기억
+        operation: prev.operation,
+        lastOperand: operand,
         isNewNumber: true,
+        historyExpression: `${prev.previousNumber} ${prev.operation} ${operand} =`,
       };
     }
 
     return prev;
   }
 
-  // 3) 숫자 입력 후(currentNumber !== "")
+  // 숫자 입력 후 상태
   const current = currentParsed ?? 0;
 
-  // 3-0) 결과 직후에 새 연산자 입력: 새 연산 시작
-  if (
-    prev.isNewNumber &&
-    isOperator(operator) &&
-    prev.previousNumber !== "" &&
-    prev.operation
-  ) {
+  // 3) 결과 직후 연산자 입력
+  if (prev.isNewNumber && isOperator(operator) && prev.previousNumber && prev.operation) {
     return {
       currentNumber: "",
       previousNumber: prev.currentNumber,
       operation: operator,
       lastOperand: "",
       isNewNumber: true,
+      historyExpression: `${prev.currentNumber} ${operator}`,
     };
   }
 
-  // 3-1) 연속 연산(previousNumber + operation이 이미 있음)
-  if (prev.previousNumber !== "" && prev.operation) {
+  // 4) 연속 연산
+  if (prev.previousNumber && prev.operation) {
     const a = toNumberSafe(prev.previousNumber);
     if (a === null) return RESET_STATE;
 
     const result = compute(a, prev.operation, current);
     if (result === null) return DIVISION_BY_ZERO_STATE;
 
-    // '='이면 결과 표시 + 반복용 상태 저장
+    // '=' 입력
     if (operator === "=") {
       return {
         currentNumber: result.toString(),
         previousNumber: result.toString(),
-        operation: prev.operation,       // 유지 → '=' 반복 가능
-        lastOperand: prev.currentNumber, // 방금 사용한 숫자 기억
+        operation: prev.operation,
+        lastOperand: prev.currentNumber,
         isNewNumber: true,
+        historyExpression: `${prev.previousNumber} ${prev.operation} ${prev.currentNumber} =`,
       };
     }
 
@@ -162,13 +181,12 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
         operation: operator,
         lastOperand: prev.currentNumber,
         isNewNumber: true,
+        historyExpression: `${result.toString()} ${operator}`,
       };
     }
-
-    return prev;
   }
 
-  // 3-2) 첫 연산자 선택(previousNumber 없음)
+  // 5) 첫 연산자 선택
   if (operator === "=") {
     return { ...prev, isNewNumber: true };
   }
@@ -181,20 +199,21 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
     operation: operator,
     lastOperand: current.toString(),
     isNewNumber: true,
+    historyExpression: `${current.toString()} ${operator}`,
   };
 }
 
 export default function App() {
-  // 다크 모드 상태 관리
+  // 다크 모드 상태
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // body에 다크 모드 클래스 적용
+  // 계산기 상태
+  const [state, setState] = useState<CalculatorState>(RESET_STATE);
+
+  // body 다크 모드 클래스 제어
   useEffect(() => {
     document.body.classList.toggle("dark", isDarkMode);
   }, [isDarkMode]);
-
-  // 계산기 상태 관리
-  const [state, setState] = useState<CalculatorState>(RESET_STATE);
 
   // 초기화
   const handleClear = () => {
@@ -229,7 +248,13 @@ export default function App() {
   // Backspace 처리
   const handleBackspace = () => {
     setState((prev) => {
-      if (prev.isNewNumber) return prev;
+      // 결과 상태에서는 상단 연산식만 제거
+      if (prev.isNewNumber) {
+        if (prev.historyExpression.includes("=")) {
+          return { ...prev, historyExpression: "" };
+        }
+        return prev;
+      }
 
       if (prev.currentNumber.length <= 1) {
         return { ...prev, currentNumber: "0", isNewNumber: true };
@@ -324,7 +349,12 @@ export default function App() {
         </div>
 
         <form>
-          <input type="text" name="output" value={state.currentNumber} readOnly aria-label="현재 값" />
+          <div className="display">
+            {state.historyExpression && (
+              <div className="expression">{state.historyExpression}</div>
+            )}
+            <input type="text" value={state.currentNumber} readOnly aria-label="현재 값" />
+          </div>
           <input type="button" className="clear" value="C" onClick={handleClear} aria-label="초기화" />
           <input type="button" className="operator" value="/" onClick={onOperatorClick} aria-label="나누기" />
           <input type="button" value="1" onClick={onNumberClick} />
