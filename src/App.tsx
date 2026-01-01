@@ -65,6 +65,24 @@ function isOperator(value: string): boolean {
 }
 
 /**
+ * UI 표기(×,÷)를 내부 연산자(*,/)로 변환
+ */
+function normalizeOperator(op: string): string {
+  if (op === "×") return "*";
+  if (op === "÷") return "/";
+  return op;
+}
+
+/**
+ * 내부 연산자(*,/)를 UI 표기(×,÷)로 변환
+ */
+function toDisplayOperator(op: string): string {
+  if (op === "*") return "×";
+  if (op === "/") return "÷";
+  return op;
+}
+
+/**
  * 문자열 숫자를 안전하게 number로 변환
  */
 function toNumberSafe(value: string): number | null {
@@ -141,10 +159,10 @@ function reduceOperator(
         currentNumber: resultStr,
         previousNumber: resultStr,
         isNewNumber: true,
-        historyExpression: `${left} ${op} ${right} =`,
+        historyExpression: `${left} ${toDisplayOperator(op)} ${right} =`,
       },
       history: {
-        expression: `${left} ${op} ${right}`,
+        expression: `${left} ${toDisplayOperator(op)} ${right}`,
         result: resultStr,
         operation: op,
         operand: right,
@@ -160,7 +178,7 @@ function reduceOperator(
         next: {
           ...prev,
           operation: operator,
-          historyExpression: `${prev.previousNumber} ${operator}`,
+          historyExpression: `${prev.previousNumber} ${toDisplayOperator(operator)}`,
         },
         history: null,
       };
@@ -189,10 +207,10 @@ function reduceOperator(
           operation: prev.operation,
           lastOperand: operand,
           isNewNumber: true,
-          historyExpression: `${left} ${op} ${right} =`,
+          historyExpression: `${left} ${toDisplayOperator(op)} ${right} =`,
         },
         history: {
-          expression: `${left} ${op} ${right}`,
+          expression: `${left} ${toDisplayOperator(op)} ${right}`,
           result: resultStr,
           operation: op,
           operand: right,
@@ -215,7 +233,7 @@ function reduceOperator(
         operation: operator,
         lastOperand: "",
         isNewNumber: true,
-        historyExpression: `${prev.currentNumber} ${operator}`,
+        historyExpression: `${prev.currentNumber} ${toDisplayOperator(operator)}`,
       },
       history: null,
     };
@@ -244,10 +262,10 @@ function reduceOperator(
           operation: prev.operation,
           lastOperand: prev.currentNumber,
           isNewNumber: true,
-          historyExpression: `${left} ${op} ${right} =`,
+          historyExpression: `${left} ${toDisplayOperator(op)} ${right} =`,
         },
         history: {
-          expression: `${left} ${op} ${right}`,
+          expression: `${left} ${toDisplayOperator(op)} ${right}`,
           result: resultStr,
           operation: op,
           operand: right,
@@ -264,7 +282,7 @@ function reduceOperator(
           operation: operator,
           lastOperand: prev.currentNumber,
           isNewNumber: true,
-          historyExpression: `${resultStr} ${operator}`,
+          historyExpression: `${resultStr} ${toDisplayOperator(operator)}`,
         },
         history: null,
       };
@@ -289,7 +307,7 @@ function reduceOperator(
       operation: operator,
       lastOperand: currentStr,
       isNewNumber: true,
-      historyExpression: `${currentStr} ${operator}`,
+      historyExpression: `${currentStr} ${toDisplayOperator(operator)}`,
     },
     history: null,
   };
@@ -370,9 +388,11 @@ export default function App() {
 
   // 연산 처리 (클릭/키보드 공용) 및 히스토리 기록 데이터 생성
   const handleOperator = (operator: string) => {
+    const normalized = normalizeOperator(operator);
+
     setState((prev) => {
-      const { next, history } = reduceOperator(prev, operator);
-      pendingHistoryRef.current = operator === "=" ? history : null;
+      const { next, history } = reduceOperator(prev, normalized);
+      pendingHistoryRef.current = normalized === "=" ? history : null;
       return next;
     });
   };
@@ -562,11 +582,11 @@ export default function App() {
             <input type="text" value={state.currentNumber} readOnly aria-label="현재 값" />
           </div>
           <input type="button" className="clear" value="C" onClick={handleClear} aria-label="초기화" />
-          <input type="button" className="operator" value="/" onClick={onOperatorClick} aria-label="나누기" />
+          <input type="button" className="operator" value="÷" onClick={onOperatorClick} aria-label="나누기" />
           <input type="button" value="1" onClick={onNumberClick} />
           <input type="button" value="2" onClick={onNumberClick} />
           <input type="button" value="3" onClick={onNumberClick} />
-          <input type="button" className="operator" value="*" onClick={onOperatorClick} aria-label="곱하기" />
+          <input type="button" className="operator" value="×" onClick={onOperatorClick} aria-label="곱하기" />
           <input type="button" value="4" onClick={onNumberClick} />
           <input type="button" value="5" onClick={onNumberClick} />
           <input type="button" value="6" onClick={onNumberClick} />
