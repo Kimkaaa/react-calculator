@@ -186,6 +186,15 @@ body.dark .history-toggle {
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   z-index: 2000;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease-out;
+}
+
+.history-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .history-sheet {
@@ -204,6 +213,19 @@ body.dark .history-toggle {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+
+  transform: translateY(100%);
+
+  transition-property: transform;
+  transition-duration: 0.28s;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.history-sheet.open {
+  transform: translateY(0);
+
+  transition-duration: 0.16s;
+  transition-timing-function: ease-in;
 }
 
 body.dark .history-sheet {

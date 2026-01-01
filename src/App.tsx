@@ -502,52 +502,50 @@ export default function App() {
       </button>
 
       {/* 히스토리 바텀시트 */}
-      {isHistoryOpen && (
-        <div
-          className="history-overlay"
-          onClick={() => setIsHistoryOpen(false)}
-          role="presentation"
+      <div
+        className={`history-overlay ${isHistoryOpen ? "open" : ""}`}
+        onClick={() => setIsHistoryOpen(false)}
+        role="presentation"
+      >
+        <section
+          className={`history-sheet ${isHistoryOpen ? "open" : ""}`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="계산 기록"
+          onClick={(e) => e.stopPropagation()}
         >
-          <section
-            className="history-sheet"
-            role="dialog"
-            aria-modal="true"
-            aria-label="계산 기록"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="history-header">
-              <strong>기록</strong>
-              <button
-                type="button"
-                className="history-close"
-                onClick={() => setIsHistoryOpen(false)}
-                aria-label="계산 기록 닫기"
-              >
-                ✕
-              </button>
-            </div>
+          <div className="history-header">
+            <strong>기록</strong>
+            <button
+              type="button"
+              className="history-close"
+              onClick={() => setIsHistoryOpen(false)}
+              aria-label="계산 기록 닫기"
+            >
+              ✕
+            </button>
+          </div>
 
-            <div className="history-list">
-              {history.length === 0 ? (
-                <div className="history-empty">기록이 없습니다</div>
-              ) : (
-                history.map((item) => (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className="history-item"
-                    onClick={() => onSelectHistory(item)}
-                    aria-label={`${item.expression}, 결과 ${item.result}`}
-                  >
-                    <div className="history-expression">{item.expression}</div>
-                    <div className="history-result">{item.result}</div>
-                  </button>
-                ))
-              )}
-            </div>
-          </section>
-        </div>
-      )}
+          <div className="history-list">
+            {history.length === 0 ? (
+              <div className="history-empty">기록이 없습니다</div>
+            ) : (
+              history.map((item) => (
+                <button
+                  type="button"
+                  key={item.id}
+                  className="history-item"
+                  onClick={() => onSelectHistory(item)}
+                  aria-label={`${item.expression}, 결과 ${item.result}`}
+                >
+                  <div className="history-expression">{item.expression}</div>
+                  <div className="history-result">{item.result}</div>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
 
       <article className={`calculator ${isDarkMode ? "dark" : ""}`} aria-label="계산기">
 
