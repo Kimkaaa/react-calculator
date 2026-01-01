@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Decimal from "decimal.js";
 
 const OPERATORS = ["+", "-", "*", "/"];
@@ -14,6 +14,28 @@ interface CalculatorState {
   isNewNumber: boolean;       // 새 숫자 입력 여부
   historyExpression: string;  // 상단 연산식 표시
 }
+
+/**
+ * 히스토리 아이템
+ */
+type HistoryItem = {
+  id: string;
+  expression: string; // 예: "1 + 2"
+  result: string;     // 예: "3"
+  operation: string;  // "+", "-", "*", "/"
+  operand: string;    // 우항(예: "2") -> '=' 반복 입력용
+  createdAt: number;
+};
+
+/**
+ * 히스토리 기록을 위한 계산 결과 데이터
+ */
+type HistoryPayload = {
+  expression: string;
+  result: string;
+  operation: string;
+  operand: string;
+};
 
 /**
  * 초기 상태
@@ -71,13 +93,26 @@ function compute(a: number, op: string, b: number): number | null {
 }
 
 /**
+ * id 생성 (crypto.randomUUID 미지원 환경 대비)
+ */
+function createId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+/**
  * 연산자 입력에 따른 상태 전이
  */
-function reduceOperator(prev: CalculatorState, operator: string): CalculatorState {
+function reduceOperator(
+  prev: CalculatorState,
+  operator: string
+): { next: CalculatorState; history: HistoryPayload | null } {
   // 에러 상태에서 연산 입력 시 초기화
   const currentParsed = toNumberSafe(prev.currentNumber);
   if (prev.currentNumber !== "" && currentParsed === null) {
-    return RESET_STATE;
+    return { next: RESET_STATE, history: null };
   }
 
   // 1) '=' 반복 입력
@@ -90,17 +125,30 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
   ) {
     const a = toNumberSafe(prev.previousNumber);
     const b = toNumberSafe(prev.lastOperand);
-    if (a === null || b === null) return RESET_STATE;
+    if (a === null || b === null) return { next: RESET_STATE, history: null };
 
     const result = compute(a, prev.operation, b);
-    if (result === null) return DIVISION_BY_ZERO_STATE;
+    if (result === null) return { next: DIVISION_BY_ZERO_STATE, history: null };
+
+    const resultStr = result.toString();
+    const left = prev.previousNumber;
+    const op = prev.operation;
+    const right = prev.lastOperand;
 
     return {
-      ...prev,
-      currentNumber: result.toString(),
-      previousNumber: result.toString(),
-      isNewNumber: true,
-      historyExpression: `${prev.previousNumber} ${prev.operation} ${prev.lastOperand} =`,
+      next: {
+        ...prev,
+        currentNumber: resultStr,
+        previousNumber: resultStr,
+        isNewNumber: true,
+        historyExpression: `${left} ${op} ${right} =`,
+      },
+      history: {
+        expression: `${left} ${op} ${right}`,
+        result: resultStr,
+        operation: op,
+        operand: right,
+      },
     };
   }
 
@@ -109,33 +157,50 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
     // 연산자 교체
     if (isOperator(operator) && prev.previousNumber && prev.operation) {
       return {
-        ...prev,
-        operation: operator,
-        historyExpression: `${prev.previousNumber} ${operator}`,
+        next: {
+          ...prev,
+          operation: operator,
+          historyExpression: `${prev.previousNumber} ${operator}`,
+        },
+        history: null,
       };
     }
 
     // 7 + = → 7 + 7 =
     if (operator === "=" && prev.previousNumber && prev.operation) {
       const operand = prev.lastOperand || prev.previousNumber;
+
       const a = toNumberSafe(prev.previousNumber);
       const b = toNumberSafe(operand);
-      if (a === null || b === null) return RESET_STATE;
+      if (a === null || b === null) return { next: RESET_STATE, history: null };
 
       const result = compute(a, prev.operation, b);
-      if (result === null) return DIVISION_BY_ZERO_STATE;
+      if (result === null) return { next: DIVISION_BY_ZERO_STATE, history: null };
+
+      const resultStr = result.toString();
+      const left = prev.previousNumber;
+      const op = prev.operation;
+      const right = operand;
 
       return {
-        currentNumber: result.toString(),
-        previousNumber: result.toString(),
-        operation: prev.operation,
-        lastOperand: operand,
-        isNewNumber: true,
-        historyExpression: `${prev.previousNumber} ${prev.operation} ${operand} =`,
+        next: {
+          currentNumber: resultStr,
+          previousNumber: resultStr,
+          operation: prev.operation,
+          lastOperand: operand,
+          isNewNumber: true,
+          historyExpression: `${left} ${op} ${right} =`,
+        },
+        history: {
+          expression: `${left} ${op} ${right}`,
+          result: resultStr,
+          operation: op,
+          operand: right,
+        },
       };
     }
 
-    return prev;
+    return { next: prev, history: null };
   }
 
   // 숫자 입력 후 상태
@@ -144,62 +209,89 @@ function reduceOperator(prev: CalculatorState, operator: string): CalculatorStat
   // 3) 결과 직후 연산자 입력
   if (prev.isNewNumber && isOperator(operator) && prev.previousNumber && prev.operation) {
     return {
-      currentNumber: "",
-      previousNumber: prev.currentNumber,
-      operation: operator,
-      lastOperand: "",
-      isNewNumber: true,
-      historyExpression: `${prev.currentNumber} ${operator}`,
+      next: {
+        currentNumber: "",
+        previousNumber: prev.currentNumber,
+        operation: operator,
+        lastOperand: "",
+        isNewNumber: true,
+        historyExpression: `${prev.currentNumber} ${operator}`,
+      },
+      history: null,
     };
   }
 
   // 4) 연속 연산
   if (prev.previousNumber && prev.operation) {
     const a = toNumberSafe(prev.previousNumber);
-    if (a === null) return RESET_STATE;
+    if (a === null) return { next: RESET_STATE, history: null };
 
     const result = compute(a, prev.operation, current);
-    if (result === null) return DIVISION_BY_ZERO_STATE;
+    if (result === null) return { next: DIVISION_BY_ZERO_STATE, history: null };
+
+    const resultStr = result.toString();
 
     // '=' 입력
     if (operator === "=") {
+      const left = prev.previousNumber;
+      const op = prev.operation;
+      const right = prev.currentNumber;
+
       return {
-        currentNumber: result.toString(),
-        previousNumber: result.toString(),
-        operation: prev.operation,
-        lastOperand: prev.currentNumber,
-        isNewNumber: true,
-        historyExpression: `${prev.previousNumber} ${prev.operation} ${prev.currentNumber} =`,
+        next: {
+          currentNumber: resultStr,
+          previousNumber: resultStr,
+          operation: prev.operation,
+          lastOperand: prev.currentNumber,
+          isNewNumber: true,
+          historyExpression: `${left} ${op} ${right} =`,
+        },
+        history: {
+          expression: `${left} ${op} ${right}`,
+          result: resultStr,
+          operation: op,
+          operand: right,
+        },
       };
     }
 
     // 다음 연산 이어가기
     if (isOperator(operator)) {
       return {
-        currentNumber: "",
-        previousNumber: result.toString(),
-        operation: operator,
-        lastOperand: prev.currentNumber,
-        isNewNumber: true,
-        historyExpression: `${result.toString()} ${operator}`,
+        next: {
+          currentNumber: "",
+          previousNumber: resultStr,
+          operation: operator,
+          lastOperand: prev.currentNumber,
+          isNewNumber: true,
+          historyExpression: `${resultStr} ${operator}`,
+        },
+        history: null,
       };
     }
+
+    return { next: prev, history: null };
   }
 
   // 5) 첫 연산자 선택
   if (operator === "=") {
-    return { ...prev, isNewNumber: true };
+    return { next: { ...prev, isNewNumber: true }, history: null };
   }
 
-  if (!isOperator(operator)) return prev;
+  if (!isOperator(operator)) return { next: prev, history: null };
+
+  const currentStr = current.toString();
 
   return {
-    currentNumber: "",
-    previousNumber: current.toString(),
-    operation: operator,
-    lastOperand: current.toString(),
-    isNewNumber: true,
-    historyExpression: `${current.toString()} ${operator}`,
+    next: {
+      currentNumber: "",
+      previousNumber: currentStr,
+      operation: operator,
+      lastOperand: currentStr,
+      isNewNumber: true,
+      historyExpression: `${currentStr} ${operator}`,
+    },
+    history: null,
   };
 }
 
@@ -209,6 +301,18 @@ export default function App() {
 
   // 계산기 상태
   const [state, setState] = useState<CalculatorState>(RESET_STATE);
+
+  // 히스토리(계산 기록)
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // '=' 입력으로 확정된 계산 결과를 임시로 보관
+  // setState 이후 useEffect에서 히스토리에 반영하기 위함
+  const pendingHistoryRef = useRef<HistoryPayload | null>(null);
+
+  // StrictMode 또는 중복 렌더링 환경에서
+  // 동일한 계산 기록이 중복 저장되는 것을 방지
+  const lastHistoryKeyRef = useRef<string>("");
 
   // body 다크 모드 클래스 제어
   useEffect(() => {
@@ -264,10 +368,40 @@ export default function App() {
     });
   };
 
-  // 연산 처리 (클릭/키보드 공용)
+  // 연산 처리 (클릭/키보드 공용) 및 히스토리 기록 데이터 생성
   const handleOperator = (operator: string) => {
-    setState((prev) => reduceOperator(prev, operator));
+    setState((prev) => {
+      const { next, history } = reduceOperator(prev, operator);
+      pendingHistoryRef.current = operator === "=" ? history : null;
+      return next;
+    });
   };
+
+  /**
+   * state 변경을 트리거로 사용하고, payload가 있을 때만 히스토리에 기록
+   */
+  useEffect(() => {
+    const payload = pendingHistoryRef.current;
+    if (!payload) return;
+
+    pendingHistoryRef.current = null;
+
+    const key = `${payload.expression}|${payload.result}`;
+    if (lastHistoryKeyRef.current === key) return;
+    lastHistoryKeyRef.current = key;
+
+    setHistory((h) => [
+      {
+        id: createId(),
+        expression: payload.expression,
+        result: payload.result,
+        operation: payload.operation,
+        operand: payload.operand,
+        createdAt: Date.now(),
+      },
+      ...h,
+    ]);
+  }, [state.currentNumber, state.historyExpression]);
 
   // 공용 클릭 핸들러
   const onNumberClick = (e: React.MouseEvent<HTMLInputElement>) => {
@@ -276,6 +410,20 @@ export default function App() {
 
   const onOperatorClick = (e: React.MouseEvent<HTMLInputElement>) => {
     handleOperator(e.currentTarget.value);
+  };
+
+  // 히스토리 항목 선택 시: 해당 결과를 현재 값으로 로드하고, '=' 반복 입력이 되도록 컨텍스트 복원
+  const onSelectHistory = (item: HistoryItem) => {
+    setState({
+      ...RESET_STATE,
+      currentNumber: item.result,
+      previousNumber: item.result,
+      operation: item.operation,
+      lastOperand: item.operand,
+      isNewNumber: true,
+      historyExpression: `${item.expression} =`,
+    });
+    setIsHistoryOpen(false);
   };
 
   // 키보드 입력
@@ -331,6 +479,18 @@ export default function App() {
 
   return (
     <>
+      {/* 히스토리 열기 */}
+      <button
+        type="button"
+        className="history-toggle"
+        onClick={() => setIsHistoryOpen(true)}
+        aria-label="계산 기록 열기"
+        aria-expanded={isHistoryOpen}
+      >
+        ☰
+      </button>
+
+      {/* 다크 모드 */}
       <button
         type="button"
         className="theme-toggle"
@@ -340,6 +500,54 @@ export default function App() {
       >
         {isDarkMode ? "☀️" : "🌙"}
       </button>
+
+      {/* 히스토리 바텀시트 */}
+      {isHistoryOpen && (
+        <div
+          className="history-overlay"
+          onClick={() => setIsHistoryOpen(false)}
+          role="presentation"
+        >
+          <section
+            className="history-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="계산 기록"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="history-header">
+              <strong>기록</strong>
+              <button
+                type="button"
+                className="history-close"
+                onClick={() => setIsHistoryOpen(false)}
+                aria-label="계산 기록 닫기"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="history-list">
+              {history.length === 0 ? (
+                <div className="history-empty">기록이 없습니다</div>
+              ) : (
+                history.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className="history-item"
+                    onClick={() => onSelectHistory(item)}
+                    aria-label={`${item.expression}, 결과 ${item.result}`}
+                  >
+                    <div className="history-expression">{item.expression}</div>
+                    <div className="history-result">{item.result}</div>
+                  </button>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
       <article className={`calculator ${isDarkMode ? "dark" : ""}`} aria-label="계산기">
 

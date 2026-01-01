@@ -1,3 +1,6 @@
+/* -------------------------
+  Base
+------------------------- */
 * {
   margin: 0;
   padding: 0;
@@ -16,6 +19,24 @@ body.dark {
   background-color: #1f1f1f;
 }
 
+/* -------------------------
+  Accessibility
+------------------------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* -------------------------
+  Fixed Controls (Theme / History Toggle)
+------------------------- */
 .theme-toggle {
   position: fixed;
   top: 16px;
@@ -37,6 +58,35 @@ body.dark {
   z-index: 1000;
 }
 
+.history-toggle {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+
+  width: 40px;
+  height: 40px;
+
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;
+
+  color: #111;
+}
+
+body.dark .history-toggle {
+  color: #f2f2f2;
+}
+
+/* -------------------------
+  Calculator
+------------------------- */
 .calculator {
   width: 287px;
   border: 1px solid #333;
@@ -100,6 +150,7 @@ body.dark {
   grid-column: span 2;
 }
 
+/* Calculator - Dark */
 .calculator.dark {
   background-color: #1f1f1f;
   border-color: #666;
@@ -127,14 +178,118 @@ body.dark {
   background-color: #c13b3b;
 }
 
-.sr-only {
+/* -------------------------
+  History Sheet
+------------------------- */
+.history-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 2000;
+}
+
+.history-sheet {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  background: #fff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+
+  padding: 12px;
+  max-height: 55vh;
+
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+body.dark .history-sheet {
+  background: #1f1f1f;
+  color: #f2f2f2;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.history-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+body.dark .history-close {
+  color: #f2f2f2;
+}
+
+/* List (scroll area) */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  padding-right: 6px;
+}
+
+/* Items */
+.history-item {
+  text-align: left;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+body.dark .history-item {
+  border-color: #444;
+}
+
+.history-expression {
+  font-size: 13px;
+  color: #777;
+  margin-bottom: 4px;
+}
+
+body.dark .history-expression {
+  color: #aaa;
+}
+
+.history-result {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+body.dark .history-result {
+  color: #f2f2f2;
+}
+
+.history-empty {
+  color: #777;
+  padding: 20px 0;
+  text-align: center;
+}
+
+/* Scrollbar (WebKit) */
+.history-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+}
+
+body.dark .history-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
 }
