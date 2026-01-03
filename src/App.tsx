@@ -324,6 +324,11 @@ export default function App() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
 
+  // 편집 모드 / 선택 상태
+  const [isHistoryEditing, setIsHistoryEditing] = useState(false);
+  const [selectedHistoryIds, setSelectedHistoryIds] = useState<Set<string>>(new Set());
+
+
   // '=' 입력으로 확정된 계산 결과를 임시로 보관
   // setState 이후 useEffect에서 히스토리에 반영하기 위함
   const pendingHistoryRef = useRef<HistoryPayload | null>(null);
@@ -432,8 +437,81 @@ export default function App() {
     handleOperator(e.currentTarget.value);
   };
 
-  // 히스토리 항목 선택 시: 해당 결과를 현재 값으로 로드하고, '=' 반복 입력이 되도록 컨텍스트 복원
+  /**
+   * 히스토리 패널을 닫고, 편집/선택 상태를 초기화
+   */
+  const closeHistoryPanel = () => {
+    setIsHistoryOpen(false);
+    setIsHistoryEditing(false);
+    setSelectedHistoryIds(new Set());
+  };
+
+  /**
+   * 히스토리 편집 모드를 토글
+   */
+  const toggleHistoryEditMode = () => {
+    if (history.length === 0) return;
+
+    setIsHistoryEditing((prev) => {
+      const next = !prev;
+      if (!next) setSelectedHistoryIds(new Set());
+      return next;
+    });
+  };
+
+  /**
+   * 히스토리 항목 선택/해제 (편집 모드에서 사용)
+   */
+  const toggleSelectHistory = (id: string) => {
+    setSelectedHistoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  /**
+   * 선택된 히스토리 삭제
+   */
+  const deleteSelectedHistory = () => {
+    const count = selectedHistoryIds.size;
+    if (count === 0) return;
+
+    const ok = window.confirm(`${count}개의 계산이 삭제됩니다. 삭제할까요?`);
+    if (!ok) return;
+
+    setHistory((prev) => prev.filter((item) => !selectedHistoryIds.has(item.id)));
+    setIsHistoryEditing(false);
+    setSelectedHistoryIds(new Set());
+  };
+
+  /**
+   * 히스토리 전체 삭제
+   */
+  const clearHistoryAll = () => {
+    if (history.length === 0) return;
+
+    const ok = window.confirm(`총 ${history.length}개의 계산이 삭제됩니다. 지울까요?`);
+    if (!ok) return;
+
+    setHistory([]);
+    setIsHistoryEditing(false);
+    setSelectedHistoryIds(new Set());
+  };
+
+  /**
+   * 히스토리 항목 선택 시:
+   * - 선택한 결과를 현재 값으로 로드
+   * - '=' 반복 입력이 가능하도록 컨텍스트 복원
+   */
   const onSelectHistory = (item: HistoryItem) => {
+    // 편집 모드에서는 '불러오기'가 아니라 '선택 토글'
+    if (isHistoryEditing) {
+      toggleSelectHistory(item.id);
+      return;
+    }
+
     setState({
       ...RESET_STATE,
       currentNumber: item.result,
@@ -524,7 +602,7 @@ export default function App() {
       {/* 히스토리 바텀시트 */}
       <div
         className={`history-overlay ${isHistoryOpen ? "open" : ""}`}
-        onClick={() => setIsHistoryOpen(false)}
+        onClick={closeHistoryPanel}
         role="presentation"
       >
         <section
@@ -539,7 +617,7 @@ export default function App() {
             <button
               type="button"
               className="history-close"
-              onClick={() => setIsHistoryOpen(false)}
+              onClick={closeHistoryPanel}
               aria-label="계산 기록 닫기"
             >
               ✕
@@ -550,25 +628,69 @@ export default function App() {
             {history.length === 0 ? (
               <div className="history-empty">기록이 없습니다</div>
             ) : (
-              history.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  className="history-item"
-                  onClick={() => onSelectHistory(item)}
-                  aria-label={`${item.expression}, 결과 ${item.result}`}
-                >
-                  <div className="history-expression">{item.expression}</div>
-                  <div className="history-result">{item.result}</div>
-                </button>
-              ))
+              history.map((item) => {
+                const isSelected = selectedHistoryIds.has(item.id);
+
+                return (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`history-item ${isHistoryEditing ? "editing" : ""} ${isSelected ? "selected" : ""}`}
+                    onClick={() => onSelectHistory(item)}
+                    aria-label={`${item.expression}, 결과 ${item.result}`}
+                  >
+                    {isHistoryEditing && (
+                      <span className={`history-check ${isSelected ? "on" : ""}`} aria-hidden="true" />
+                    )}
+
+                    <div className="history-item-content">
+                      <div className="history-expression">{item.expression}</div>
+                      <div className="history-result">{item.result}</div>
+                    </div>
+                  </button>
+                );
+              })
             )}
           </div>
+
+          {/* 하단 바: 편집/완료 + 지우기/삭제 */}
+          {history.length > 0 && (
+            <div className="history-footer">
+              <button
+                type="button"
+                className="history-footer-btn"
+                onClick={toggleHistoryEditMode}
+              >
+                {isHistoryEditing ? "완료" : "편집"}
+              </button>
+
+              {isHistoryEditing ? (
+                <button
+                  type="button"
+                  className={`history-footer-btn danger ${selectedHistoryIds.size === 0 ? "disabled" : ""}`}
+                  onClick={deleteSelectedHistory}
+                  disabled={selectedHistoryIds.size === 0}
+                  aria-disabled={selectedHistoryIds.size === 0}
+                >
+                  삭제{selectedHistoryIds.size > 0 ? `(${selectedHistoryIds.size})` : ""}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`history-footer-btn danger ${history.length === 0 ? "disabled" : ""}`}
+                  onClick={clearHistoryAll}
+                  disabled={history.length === 0}
+                  aria-disabled={history.length === 0}
+                >
+                  지우기
+                </button>
+              )}
+            </div>
+          )}
         </section>
       </div>
 
       <article className={`calculator ${isDarkMode ? "dark" : ""}`} aria-label="계산기">
-
         {/* 값 변경 시 스크린리더가 읽도록 하는 라이브 영역 */}
         <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">
           현재 값 {state.currentNumber}
@@ -581,23 +703,28 @@ export default function App() {
             )}
             <input type="text" value={state.currentNumber} readOnly aria-label="현재 값" />
           </div>
+
           <input type="button" className="clear" value="C" onClick={handleClear} aria-label="초기화" />
           <input type="button" className="operator" value="÷" onClick={onOperatorClick} aria-label="나누기" />
+
           <input type="button" value="1" onClick={onNumberClick} />
           <input type="button" value="2" onClick={onNumberClick} />
           <input type="button" value="3" onClick={onNumberClick} />
           <input type="button" className="operator" value="×" onClick={onOperatorClick} aria-label="곱하기" />
+
           <input type="button" value="4" onClick={onNumberClick} />
           <input type="button" value="5" onClick={onNumberClick} />
           <input type="button" value="6" onClick={onNumberClick} />
           <input type="button" className="operator" value="+" onClick={onOperatorClick} aria-label="더하기" />
+
           <input type="button" value="7" onClick={onNumberClick} />
           <input type="button" value="8" onClick={onNumberClick} />
           <input type="button" value="9" onClick={onNumberClick} />
           <input type="button" className="operator" value="-" onClick={onOperatorClick} aria-label="빼기" />
+          
           <input type="button" className="dot" value="." onClick={handleDot} aria-label="소수점" />
           <input type="button" value="0" onClick={onNumberClick} />
-          <input type="button" className="operator result" value="=" onClick={onOperatorClick} aria-label="계산 결과"/>
+          <input type="button" className="operator result" value="=" onClick={onOperatorClick} aria-label="계산 결과" />
         </form>
       </article>
     </>

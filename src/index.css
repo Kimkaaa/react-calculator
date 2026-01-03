@@ -315,3 +315,124 @@ body.dark .history-result {
 body.dark .history-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.25);
 }
+
+/* -------------------------
+  History Sheet - Footer (Edit / Delete)
+------------------------- */
+.history-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 10px;
+  padding-top: 10px;
+
+  border-top: 1px solid #eee;
+}
+
+body.dark .history-footer {
+  border-top-color: #333;
+}
+
+.history-footer-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #111;
+  font-size: 14px;
+
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.history-footer-btn:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+body.dark .history-footer-btn {
+  color: #f2f2f2;
+}
+
+body.dark .history-footer-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.history-footer-btn.danger {
+  color: #c13b3b;
+}
+
+body.dark .history-footer-btn.danger {
+  color: #ff6b6b;
+}
+
+.history-footer-btn.disabled,
+.history-footer-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* -------------------------
+  History Item - Editing UI
+------------------------- */
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.history-item.editing {
+  padding-left: 12px;
+}
+
+.history-item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history-check {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+
+  border: 2px solid #bbb;
+  flex: 0 0 auto;
+
+  position: relative;
+  box-sizing: border-box;
+}
+
+body.dark .history-check {
+  border-color: #666;
+}
+
+.history-check.on {
+  border-color: #c98a00;
+  background-color: #c98a00;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.dark .history-check.on {
+  border-color: #c98a00;
+}
+
+.history-check.on::after {
+  content: "";
+  width: 4px;
+  height: 7px;
+
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+
+  transform: translateY(-1.5px) rotate(45deg);
+}
+
+.history-item.selected {
+  border-color: #c98a00;
+}
+
+body.dark .history-item.selected {
+  border-color: #c98a00;
+}
