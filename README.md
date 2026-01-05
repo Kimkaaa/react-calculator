@@ -5,34 +5,43 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 사칙연산과 소수점 계산을 기본으로,
 키보드 입력, 다크 모드, 연산 기록 패널, 접근성 대응 등을 구현했습니다.
 
-이 프로젝트는 상태 설계, 입력 및 이벤트 처리, UI 상태 관리를 학습하고 정리하기 위한 개인 학습용 프로젝트입니다.
+이 프로젝트는 상태 설계, 입력·이벤트 처리, UI 상태 관리를 학습하고 정리하기 위한 개인 프로젝트입니다.
 
 <br />
 
-<details>
-  <summary><b>📷 스크린샷</b></summary>
+## 📸 스크린샷
 
-  <br />
-  <b>라이트 모드 / 다크 모드</b>
+<details>
+  <summary><b>라이트 모드 / 다크 모드</b></summary>
+
   <br />
   <img src="./screenshot/calculator-preview01.png" alt="기본 화면 (라이트/다크)" />
 
-  <br /><br />
-  <b>히스토리 패널 기본 / 편집</b>
-  <br />
-  <img src="./screenshot/calculator-preview02.png" alt="히스토리 패널 (기본/편집)" />
-
-  <br /><br />
-  <b>히스토리 없는 상태 / 예외</b>
-  <br />
-  <img src="./screenshot/calculator-preview03.png" alt="예외/빈 상태" />
-
-  <br />
 </details>
 
 <br />
 
-## 주요 기능
+<details>
+  <summary><b>히스토리 패널 기본 / 편집</b></summary>
+
+  <br />
+  <img src="./screenshot/calculator-preview02.png" alt="히스토리 패널 (기본/편집)" />
+
+</details>
+
+<br />
+
+<details>
+  <summary><b>히스토리 없는 상태 / 예외</b></summary>
+
+  <br />
+  <img src="./screenshot/calculator-preview03.png" alt="히스토리 없는 상태 / 예외" />
+
+</details>
+
+<br />
+
+## 🚀 주요 기능
 
 - 사칙연산(+ / − / × / ÷) 및 소수점 계산
 - `=` 반복 입력 시 마지막 연산을 기준으로 재계산
@@ -50,7 +59,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 <br />
 
-## 기술 스택
+## 🛠️ 기술 스택
 
 - React
 - TypeScript
@@ -58,7 +67,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 <br />
 
-## 동작 예시
+## 🧪 동작 예시
 
 - `8 ÷ 0 =` → `0으로 나눌 수 없습니다`
 - `0 → 5` 입력 시 `05`가 아닌 `5`로 치환
@@ -68,7 +77,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 <br />
 
-## 구현 포인트
+## 🧩 구현 포인트
 
 ### 1) 상태 설계
 
@@ -81,7 +90,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 - `isNewNumber`: 결과 확정 이후 새 숫자 입력 여부
 
 입력 방식이나 입력 경로에 관계없이,
-**동일한 상태 전이 규칙을 거치도록 구성**했습니다.
+동일한 상태 전이 규칙을 거치도록 구성했습니다.
 
 <br />
 
@@ -89,7 +98,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 연산 처리를 이벤트 핸들러 내부에서 직접 수행하지 않고,
 
-이전 상태(`prev`)와 입력값을 받아 다음 상태를 반환하는 **순수 함수 형태로 분리**했습니다.
+이전 상태(`prev`)와 입력값을 받아 다음 상태를 반환하는 순수 함수 형태로 분리했습니다.
 
 이 구조를 통해
 
@@ -139,6 +148,6 @@ UI 모드 상태를 분리해 관리해, 클릭 동작의 의미를 구분했습
 
 <br />
 
-## 참고
+## 📝 참고
 
 - React 학습 과정에서 [책](https://product.kyobobook.co.kr/detail/S000217326306)에 수록된 계산기 예제를 바탕으로 확장했습니다.
