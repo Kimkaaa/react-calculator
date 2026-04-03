@@ -1,5 +1,7 @@
 # Calculator (React + TypeScript)
 
+<br />
+
 React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 사칙연산과 소수점 계산을 기본으로,
@@ -15,7 +17,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
   <summary><b>라이트 모드 / 다크 모드</b></summary>
 
   <br />
-  <img src="./screenshot/calculator-preview01.png" alt="기본 화면 (라이트/다크)" />
+  <img src="./screenshot/preview_01.png" alt="기본 화면 (라이트/다크)" />
 
 </details>
 
@@ -25,7 +27,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
   <summary><b>히스토리 패널 기본 / 편집</b></summary>
 
   <br />
-  <img src="./screenshot/calculator-preview02.png" alt="히스토리 패널 (기본/편집)" />
+  <img src="./screenshot/preview_02.png" alt="히스토리 패널 (기본/편집)" />
 
 </details>
 
@@ -35,7 +37,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
   <summary><b>히스토리 없는 상태 / 예외</b></summary>
 
   <br />
-  <img src="./screenshot/calculator-preview03.png" alt="히스토리 없는 상태 / 예외" />
+  <img src="./screenshot/preview_03.png" alt="히스토리 없는 상태 / 예외" />
 
 </details>
 
