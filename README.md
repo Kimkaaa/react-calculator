@@ -14,7 +14,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 <br />
 
-## 스크린샷
+## 실행 화면
 
 <details>
   <summary><b>라이트 모드 / 다크 모드</b></summary>
@@ -67,8 +67,8 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 ## 기술 스택
 
-- React
 - TypeScript
+- React
 - Decimal.js
 
 <br />
@@ -84,7 +84,7 @@ React와 TypeScript로 구현한 계산기 프로젝트입니다.
 
 <br />
 
-## 구현 포인트
+## 구현 방식
 
 ### 1) 상태 설계
 
